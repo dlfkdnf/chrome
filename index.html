@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공룡 게임</title>
+
+  <style>
+:root {
+  --px: 4px;
+  --dino-color: #535353;
+  --cactus-color: #535353;
+  --ptero-color: #535353;
+  --ground-color: #535353;
+  --bg-color: #f7f7f7;
+  --text-color: #535353;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Courier New', monospace;
+  transition: background 0.3s;
+}
+
+body.night {
+  --dino-color: #e0e0e0;
+  --cactus-color: #7ec87e;
+  --ptero-color: #e0e0e0;
+  --ground-color: #888888;
+  --bg-color: #1a1a2e;
+  --text-color: #e0e0e0;
+  background: var(--bg-color);
+}
+
+#game {
+  position: relative;
+  width: 800px;
+  height: 300px;
+  overflow: hidden;
+  border-bottom: 2px solid var(--ground-color);
+}
+
+#score-area {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 16px;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text-color);
+  letter-spacing: 2px;
+  z-index: 10;
+}
+
+#sky {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+.cloud {
+  position: absolute;
+  width: 72px;
+  height: 24px;
+  background: #ccc;
+  border-radius: 12px;
+  opacity: 0.7;
+  transition: background 0.3s;
+}
+
+body.night .cloud { background: #555; }
+
+.star {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+body.night .star { opacity: 1; }
+
+#ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  overflow: hidden;
+}
+
+.ground-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ground-color) 0px,
+    var(--ground-color) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+}
+
+#obstacles {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--text-color);
+  font-weight: bold;
+  letter-spacing: 2px;
+  display: none;
+  z-index: 20;
+}
+
+[data-state="idle"] .msg-start { display: block; }
+[data-state="gameover"] .msg-gameover { display: block; }
+
+.gameover-text { font-size: 24px; margin-bottom: 12px; }
+.restart-text { font-size: 14px; }
+
+/* ===== 공룡 ===== */
+#dino {
+  position: absolute;
+  left: 80px;
+  bottom: 20px;
+  width: var(--px);
+  height: var(--px);
+  background: transparent;
+  box-shadow:
+    calc(3*var(--px)) 0 0 0 var(--dino-color),
+    calc(10*var(--px)) 0 0 0 var(--dino-color);
+}
+
+#dino.run-b {
+  box-shadow:
+    calc(5*var(--px)) 0 0 0 var(--dino-color),
+    calc(9*var(--px)) 0 0 0 var(--dino-color);
+}
+
+#dino.crouching {
+  box-shadow:
+    calc(3*var(--px)) 0 0 0 var(--dino-color),
+    calc(10*var(--px)) 0 0 0 var(--dino-color);
+}
+
+#dino.crouching.run-b {
+  box-shadow:
+    calc(5*var(--px)) 0 0 0 var(--dino-color),
+    calc(9*var(--px)) 0 0 0 var(--dino-color);
+}
+
+#dino::before {
+  content: '';
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: transparent;
+  box-shadow:
+    calc(4*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-13*var(--px)) 0 0 var(--dino-color),
+
+    calc(3*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-12*var(--px)) 0 0 var(--dino-color),
+
+    calc(3*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-11*var(--px)) 0 0 var(--dino-color),
+
+    calc(2*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-10*var(--px)) 0 0 var(--dino-color),
+
+    calc(0*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(1*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(2*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-9*var(--px)) 0 0 var(--dino-color),
+
+    calc(0*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(1*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(2*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-8*var(--px)) 0 0 var(--dino-color),
+
+    calc(0*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(1*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(2*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+
+    calc(2*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+
+    calc(4*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color);
+}
+
+#dino::after {
+  content: '';
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: transparent;
+  box-shadow:
+    calc(4*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+
+    calc(8*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color);
+}
+
+#dino.run-b::after {
+  box-shadow:
+    calc(4*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+
+    calc(8*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color);
+}
+
+#dino.crouching::before {
+  box-shadow:
+    calc(4*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(12*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(13*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(14*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+    calc(15*var(--px)) calc(-7*var(--px)) 0 0 var(--dino-color),
+
+    calc(3*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(12*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(13*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+    calc(14*var(--px)) calc(-6*var(--px)) 0 0 var(--dino-color),
+
+    calc(0*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(1*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(2*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(12*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+    calc(13*var(--px)) calc(-5*var(--px)) 0 0 var(--dino-color),
+
+    calc(0*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(1*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(2*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(6*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(7*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(11*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(12*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color),
+    calc(13*var(--px)) calc(-4*var(--px)) 0 0 var(--dino-color);
+}
+
+#dino.crouching::after {
+  box-shadow:
+    calc(4*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(3*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(4*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(10*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color);
+}
+
+#dino.crouching.run-b::after {
+  box-shadow:
+    calc(4*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(5*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-3*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-2*var(--px)) 0 0 var(--dino-color),
+    calc(8*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color),
+    calc(9*var(--px)) calc(-1*var(--px)) 0 0 var(--dino-color);
+}
+
+/* ===== 선인장 ===== */
+.cactus {
+  position: absolute;
+  bottom: 0;
+  width: var(--px);
+  height: var(--px);
+  background: var(--cactus-color);
+}
+
+.cactus--sm::before {
+  content: '';
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: var(--cactus-color);
+  box-shadow:
+    0 calc(-1*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-2*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-3*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-4*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-5*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-6*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-7*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-8*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-9*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-10*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-11*var(--px)) 0 0 var(--cactus-color),
+
+    calc(-1*var(--px)) calc(-5*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-5*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-6*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-8*var(--px)) 0 0 var(--cactus-color),
+
+    calc(1*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(2*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(2*var(--px)) calc(-8*var(--px)) 0 0 var(--cactus-color),
+    calc(2*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(2*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color);
+}
+
+.cactus--md::before {
+  content: '';
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: var(--cactus-color);
+  box-shadow:
+    0 calc(-1*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-2*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-3*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-4*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-5*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-6*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-7*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-8*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-9*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-10*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-11*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-12*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-13*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-14*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-15*var(--px)) 0 0 var(--cactus-color),
+
+    calc(-1*var(--px)) calc(-4*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-4*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-4*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-5*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-6*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-8*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(-1*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+
+    calc(1*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(2*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(3*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(3*var(--px)) calc(-8*var(--px)) 0 0 var(--cactus-color),
+    calc(3*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(3*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color),
+    calc(3*var(--px)) calc(-11*var(--px)) 0 0 var(--cactus-color),
+    calc(3*var(--px)) calc(-12*var(--px)) 0 0 var(--cactus-color),
+    calc(1*var(--px)) calc(-12*var(--px)) 0 0 var(--cactus-color),
+    calc(2*var(--px)) calc(-12*var(--px)) 0 0 var(--cactus-color);
+}
+
+.cactus--lg::before {
+  content: '';
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: var(--cactus-color);
+  box-shadow:
+    0 calc(-1*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-2*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-3*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-4*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-5*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-6*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-7*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-8*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-9*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-10*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-11*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-12*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-13*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-14*var(--px)) 0 0 var(--cactus-color),
+    0 calc(-15*var(--px)) 0 0 var(--cactus-color),
+
+    calc(-1*var(--px)) calc(-6*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-6*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-6*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-8*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(-3*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color),
+    calc(-1*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color),
+    calc(-2*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color),
+
+    calc(4*var(--px)) 0 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-1*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-2*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-3*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-4*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-5*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-6*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-7*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-8*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-11*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-12*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-13*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-14*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-15*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-16*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-17*var(--px)) 0 0 var(--cactus-color),
+    calc(4*var(--px)) calc(-18*var(--px)) 0 0 var(--cactus-color),
+
+    calc(5*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(6*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(7*var(--px)) calc(-9*var(--px)) 0 0 var(--cactus-color),
+    calc(7*var(--px)) calc(-10*var(--px)) 0 0 var(--cactus-color),
+    calc(7*var(--px)) calc(-11*var(--px)) 0 0 var(--cactus-color),
+    calc(7*var(--px)) calc(-12*var(--px)) 0 0 var(--cactus-color),
+    calc(7*var(--px)) calc(-13*var(--px)) 0 0 var(--cactus-color),
+    calc(5*var(--px)) calc(-13*var(--px)) 0 0 var(--cactus-color),
+    calc(6*var(--px)) calc(-13*var(--px)) 0 0 var(--cactus-color);
+}
+
+/* ===== 익룡 ===== */
+.ptero {
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: var(--ptero-color);
+}
+
+.ptero::before {
+  content: '';
+  position: absolute;
+  width: var(--px);
+  height: var(--px);
+  background: var(--ptero-color);
+  box-shadow:
+    calc(1*var(--px)) 0 0 0 var(--ptero-color),
+    calc(2*var(--px)) 0 0 0 var(--ptero-color),
+    calc(3*var(--px)) 0 0 0 var(--ptero-color),
+    calc(4*var(--px)) 0 0 0 var(--ptero-color),
+    calc(5*var(--px)) 0 0 0 var(--ptero-color),
+    calc(6*var(--px)) 0 0 0 var(--ptero-color),
+    calc(7*var(--px)) 0 0 0 var(--ptero-color),
+    calc(8*var(--px)) 0 0 0 var(--ptero-color),
+    calc(8*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+
+    calc(0*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(1*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(3*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(4*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(5*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(6*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(-1*var(--px)) calc(-2*var(--px)) 0 0 var(--ptero-color),
+    calc(0*var(--px)) calc(-2*var(--px)) 0 0 var(--ptero-color),
+    calc(1*var(--px)) calc(-2*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(-2*var(--px)) 0 0 var(--ptero-color),
+    calc(-2*var(--px)) calc(-3*var(--px)) 0 0 var(--ptero-color),
+    calc(-1*var(--px)) calc(-3*var(--px)) 0 0 var(--ptero-color),
+
+    calc(1*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(2*var(--px)) 0 0 var(--ptero-color),
+    calc(3*var(--px)) calc(2*var(--px)) 0 0 var(--ptero-color);
+}
+
+.ptero.flap::before {
+  box-shadow:
+    calc(1*var(--px)) 0 0 0 var(--ptero-color),
+    calc(2*var(--px)) 0 0 0 var(--ptero-color),
+    calc(3*var(--px)) 0 0 0 var(--ptero-color),
+    calc(4*var(--px)) 0 0 0 var(--ptero-color),
+    calc(5*var(--px)) 0 0 0 var(--ptero-color),
+    calc(6*var(--px)) 0 0 0 var(--ptero-color),
+    calc(7*var(--px)) 0 0 0 var(--ptero-color),
+    calc(8*var(--px)) 0 0 0 var(--ptero-color),
+    calc(8*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+
+    calc(0*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(1*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(3*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(4*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(5*var(--px)) calc(1*var(--px)) 0 0 var(--ptero-color),
+    calc(-1*var(--px)) calc(2*var(--px)) 0 0 var(--ptero-color),
+    calc(0*var(--px)) calc(2*var(--px)) 0 0 var(--ptero-color),
+    calc(1*var(--px)) calc(2*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(2*var(--px)) 0 0 var(--ptero-color),
+
+    calc(1*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(-1*var(--px)) 0 0 var(--ptero-color),
+    calc(2*var(--px)) calc(-2*var(--px)) 0 0 var(--ptero-color),
+    calc(3*var(--px)) calc(-2*var(--px)) 0 0 var(--ptero-color);
+}
+  </style>
+</head>
+
+<body data-state="idle">
+  <div id="game">
+    <div id="score-area">
+      <span id="hi-score">HI 00000</span>
+      <span id="score">00000</span>
+    </div>
+
+    <div id="sky">
+      <div class="cloud" style="left:10%;top:30px"></div>
+      <div class="cloud" style="left:40%;top:50px"></div>
+      <div class="cloud" style="left:70%;top:20px"></div>
+
+      <div class="star" style="left:8%;top:40px"></div>
+      <div class="star" style="left:20%;top:25px"></div>
+      <div class="star" style="left:35%;top:55px"></div>
+      <div class="star" style="left:50%;top:35px"></div>
+      <div class="star" style="left:63%;top:20px"></div>
+      <div class="star" style="left:75%;top:50px"></div>
+      <div class="star" style="left:85%;top:30px"></div>
+      <div class="star" style="left:93%;top:45px"></div>
+    </div>
+
+    <div id="dino"></div>
+
+    <div id="ground">
+      <div class="ground-strip" id="ground-strip-a"></div>
+    </div>
+
+    <div id="obstacles"></div>
+
+    <div class="overlay msg-start">
+      <p>Space / ↑ 키로 시작</p>
+    </div>
+
+    <div class="overlay msg-gameover">
+      <p class="gameover-text">GAME OVER</p>
+      <p class="restart-text">Space / ↑ 키로 재시작</p>
+    </div>
+  </div>
+
+  <script>
+'use strict';
+
+// ===== 상수 =====
+const GRAVITY = 0.0025;
+const JUMP_VEL = -0.65;
+const INITIAL_SPEED = 0.25;
+const MAX_SPEED = 0.70;
+const SPEED_ACCEL = 0.000028;
+const SCORE_INTERVAL = 50;
+const DAY_CYCLE_PTS = 700;
+
+// 땅 무늬 주기: 6px 색 + 8px 투명 = 14px
+const GROUND_PATTERN_W = 14;
+
+// 공룡 치수
+const PX = 4;
+const DINO_X = 80;
+const DINO_W = 48;
+const DINO_H_NORM = 56;
+const DINO_H_CROUCH = 32;
+const GROUND_BOTTOM = 20;
+
+// ===== DOM =====
+const gameEl = document.getElementById('game');
+const dinoEl = document.getElementById('dino');
+const obstaclesEl = document.getElementById('obstacles');
+const scoreEl = document.getElementById('score');
+const hiScoreEl = document.getElementById('hi-score');
+const groundA = document.getElementById('ground-strip-a');
+
+const GAME_W = gameEl.clientWidth;
+
+// ===== 상태 =====
+let STATE = 'idle';
+let raf = null;
+let prevTs = 0;
+
+let score = 0;
+let scoreTick = 0;
+let hiScore = parseInt(localStorage.getItem('dinoHiScore') || '0', 10) || 0;
+
+let gameSpeed = INITIAL_SPEED;
+let pteroUnlock = 300;
+let cycleCount = 0;
+
+const dino = {
+  y: 0,
+  vy: 0,
+  onGround: true,
+  crouching: false,
+};
+
+// 땅과 장애물이 같은 월드 이동값을 공유함
+let worldX = 0;
+
+let obstacles = [];
+let spawnTimer = 0;
+let nextSpawn = 1500;
+
+let legTimer = 0;
+let legFrame = false;
+
+let pteroTimer = 0;
+
+hiScoreEl.textContent = 'HI ' + fmt(hiScore);
+
+function setState(s) {
+  STATE = s;
+  document.body.dataset.state = s;
+}
+
+// ===== 시작 / 리셋 =====
+function startGame() {
+  if (raf !== null) {
+    cancelAnimationFrame(raf);
+    raf = null;
+  }
+
+  score = 0;
+  scoreTick = 0;
+
+  gameSpeed = INITIAL_SPEED;
+  worldX = 0;
+
+  spawnTimer = 0;
+  nextSpawn = 1500;
+
+  legTimer = 0;
+  legFrame = false;
+  pteroTimer = 0;
+
+  cycleCount = 0;
+  pteroUnlock = 200 + Math.floor(Math.random() * 300);
+
+  dino.y = 0;
+  dino.vy = 0;
+  dino.onGround = true;
+  dino.crouching = false;
+
+  dinoEl.className = '';
+  dinoEl.style.bottom = GROUND_BOTTOM + 'px';
+
+  groundA.style.backgroundPositionX = '0px';
+
+  document.body.classList.remove('night');
+
+  obstacles.forEach(o => o.el.remove());
+  obstacles = [];
+
+  scoreEl.textContent = fmt(0);
+
+  setState('running');
+  prevTs = performance.now();
+  raf = requestAnimationFrame(gameLoop);
+}
+
+function gameOver() {
+  if (STATE !== 'running') return;
+
+  if (raf !== null) {
+    cancelAnimationFrame(raf);
+    raf = null;
+  }
+
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('dinoHiScore', String(hiScore));
+    hiScoreEl.textContent = 'HI ' + fmt(hiScore);
+  }
+
+  setState('gameover');
+}
+
+// ===== 입력 =====
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowUp') {
+    e.preventDefault();
+
+    if (STATE === 'idle' || STATE === 'gameover') {
+      startGame();
+      return;
+    }
+
+    if (STATE === 'running') {
+      jump();
+    }
+  }
+
+  if (e.code === 'ArrowDown') {
+    e.preventDefault();
+    if (STATE !== 'running') return;
+
+    dino.crouching = true;
+    dinoEl.classList.add('crouching');
+
+    if (!dino.onGround && dino.vy < 0) {
+      dino.vy = 0;
+    }
+  }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'ArrowDown') {
+    dino.crouching = false;
+    dinoEl.classList.remove('crouching');
+  }
+});
+
+gameEl.addEventListener('touchstart', e => {
+  e.preventDefault();
+
+  if (STATE === 'idle' || STATE === 'gameover') {
+    startGame();
+    return;
+  }
+
+  if (STATE === 'running') {
+    jump();
+  }
+}, { passive: false });
+
+function jump() {
+  if (dino.onGround && !dino.crouching) {
+    dino.vy = JUMP_VEL;
+    dino.onGround = false;
+  }
+}
+
+// ===== 루프 =====
+function gameLoop(ts) {
+  if (STATE !== 'running') return;
+
+  const dt = Math.min(ts - prevTs, 50);
+  prevTs = ts;
+
+  update(dt);
+
+  // 죽은 뒤 다시 requestAnimationFrame이 걸리는 문제 방지
+  if (STATE === 'running') {
+    raf = requestAnimationFrame(gameLoop);
+  }
+}
+
+function update(dt) {
+  updateSpeed(dt);
+
+  // 땅과 장애물 모두 이 값으로 이동
+  worldX += gameSpeed * dt;
+
+  updateDino(dt);
+  updateGround();
+  updateObstacles();
+  updateSpawner(dt);
+  updateScore(dt);
+  updateAnimations(dt);
+  checkCollisions();
+
+  if (STATE === 'running') {
+    checkDayNight();
+  }
+}
+
+function updateSpeed(dt) {
+  gameSpeed = Math.min(MAX_SPEED, gameSpeed + SPEED_ACCEL * dt);
+}
+
+function updateDino(dt) {
+  if (!dino.onGround) {
+    dino.vy += GRAVITY * dt;
+    dino.y -= dino.vy * dt;
+
+    if (dino.y <= 0) {
+      dino.y = 0;
+      dino.vy = 0;
+      dino.onGround = true;
+    }
+  }
+
+  dinoEl.style.bottom = (GROUND_BOTTOM + dino.y) + 'px';
+}
+
+function updateGround() {
+  // background-position으로 움직여서 땅이 선인장보다 빨라 보이는 문제 제거
+  const offset = -(worldX % GROUND_PATTERN_W);
+  groundA.style.backgroundPositionX = offset + 'px';
+}
+
+function updateObstacles() {
+  for (const obs of obstacles) {
+    obs.divX = obs.worldDivX - worldX;
+    obs.x = obs.worldBoxX - worldX;
+    obs.el.style.left = obs.divX + 'px';
+  }
+
+  obstacles = obstacles.filter(obs => {
+    if (obs.divX < -200) {
+      obs.el.remove();
+      return false;
+    }
+    return true;
+  });
+}
+
+function updateSpawner(dt) {
+  spawnTimer += dt;
+
+  if (spawnTimer >= nextSpawn) {
+    spawnTimer = 0;
+    nextSpawn = Math.max(600, 2000 - gameSpeed * 1500) + Math.random() * 600;
+    spawnObstacle();
+  }
+}
+
+function spawnObstacle() {
+  const spawnPtero = score >= pteroUnlock && Math.random() < 0.3;
+
+  if (spawnPtero) {
+    spawnPterodactyl();
+    return;
+  }
+
+  const count = score >= 400 && Math.random() < 0.4 ? 2 : 1;
+
+  for (let i = 0; i < count; i++) {
+    spawnCactus(i * (PX * 5));
+  }
+}
+
+function chooseTier() {
+  if (score < 200) return 'sm';
+  if (score < 700) return Math.random() < 0.5 ? 'sm' : 'md';
+  return Math.random() < 0.4 ? 'md' : 'lg';
+}
+
+function spawnCactus(xOffset) {
+  const tier = chooseTier();
+  const el = document.createElement('div');
+
+  el.className = `cactus cactus--${tier}`;
+
+  const divX = GAME_W + 10 + xOffset;
+
+  const dims = {
+    sm: { xOff: -8, w: 20, h: 44 },
+    md: { xOff: -12, w: 28, h: 60 },
+    lg: { xOff: -12, w: 44, h: 72 },
+  };
+
+  const d = dims[tier];
+  const boxX = divX + d.xOff;
+
+  el.style.left = divX + 'px';
+  el.style.bottom = GROUND_BOTTOM + 'px';
+
+  obstaclesEl.appendChild(el);
+
+  obstacles.push({
+    type: 'cactus',
+    el,
+    bottom: 0,
+    divX,
+    x: boxX,
+    w: d.w,
+    h: d.h,
+    worldDivX: worldX + divX,
+    worldBoxX: worldX + boxX,
+  });
+}
+
+function spawnPterodactyl() {
+  const el = document.createElement('div');
+
+  el.className = 'ptero';
+
+  const divX = GAME_W + 10;
+
+  const aboveGround = [4, 40, 70];
+  let altIdx;
+
+  if (score >= 500) {
+    altIdx = Math.floor(Math.random() * 3);
+  } else {
+    altIdx = 1 + Math.floor(Math.random() * 2);
+  }
+
+  const ag = aboveGround[altIdx];
+  const boxX = divX - 4;
+
+  el.style.left = divX + 'px';
+  el.style.bottom = (GROUND_BOTTOM + ag) + 'px';
+
+  obstaclesEl.appendChild(el);
+
+  obstacles.push({
+    type: 'ptero',
+    el,
+    bottom: ag,
+    divX,
+    x: boxX,
+    w: 40,
+    h: 20,
+    worldDivX: worldX + divX,
+    worldBoxX: worldX + boxX,
+  });
+}
+
+function updateScore(dt) {
+  scoreTick += dt;
+
+  while (scoreTick >= SCORE_INTERVAL) {
+    score++;
+    scoreTick -= SCORE_INTERVAL;
+  }
+
+  scoreEl.textContent = fmt(score);
+}
+
+function updateAnimations(dt) {
+  legTimer += dt;
+
+  const legInterval = Math.max(80, 180 - gameSpeed * 200);
+
+  if (legTimer >= legInterval) {
+    legTimer = 0;
+    legFrame = !legFrame;
+
+    if (legFrame) {
+      dinoEl.classList.add('run-b');
+    } else {
+      dinoEl.classList.remove('run-b');
+    }
+  }
+
+  pteroTimer += dt;
+
+  if (pteroTimer >= 250) {
+    pteroTimer = 0;
+
+    obstacles
+      .filter(o => o.type === 'ptero')
+      .forEach(o => o.el.classList.toggle('flap'));
+  }
+}
+
+// ===== 충돌 =====
+function getDinoBox() {
+  // 왼쪽 아래 이상한 픽셀 / 빈 공간 때문에 억울하게 죽지 않도록 보정
+  if (dino.crouching) {
+    return {
+      x: DINO_X + 10,
+      y: dino.y + 4,
+      w: 46,
+      h: DINO_H_CROUCH - 8,
+    };
+  }
+
+  return {
+    x: DINO_X + 12,
+    y: dino.y + 4,
+    w: 30,
+    h: DINO_H_NORM - 8,
+  };
+}
+
+function getObsBox(obs) {
+  return {
+    x: obs.x,
+    y: obs.bottom,
+    w: obs.w,
+    h: obs.h,
+  };
+}
+
+function boxOverlap(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
+}
+
+function snapObstacleToDino(obs, db) {
+  // 죽는 순간 장애물이 너무 파고들지 않고 닿은 상태로 멈추게 보정
+  const targetX = db.x + db.w - 1;
+  const correction = targetX - obs.x;
+
+  if (correction > 0 && correction < 80) {
+    obs.x += correction;
+    obs.divX += correction;
+    obs.worldBoxX += correction;
+    obs.worldDivX += correction;
+    obs.el.style.left = obs.divX + 'px';
+  }
+}
+
+function checkCollisions() {
+  const db = getDinoBox();
+
+  for (const obs of obstacles) {
+    if (boxOverlap(db, getObsBox(obs))) {
+      snapObstacleToDino(obs, db);
+      gameOver();
+      return;
+    }
+  }
+}
+
+function checkDayNight() {
+  const cycle = Math.floor(score / DAY_CYCLE_PTS);
+
+  if (cycle !== cycleCount) {
+    cycleCount = cycle;
+    document.body.classList.toggle('night');
+  }
+}
+
+function fmt(n) {
+  return String(n).padStart(5, '0');
+}
+  </script>
+</body>
+</html>
